@@ -1,5 +1,5 @@
 (function() {
-  var $allColors, $colors, COLORS, CURRENT_COLOR, CURRENT_COLORWHEEL_ROTATION, FORCE, IS_TOUCH, LAST_TOUCHES, MAX_PARTICLES, MOUSEDOWN, PARTICLES, POOL, Particle, canvas, init, log, setActiveColor, setupColorClick;
+  var $allColors, $colors, COLORS, CURRENT_COLOR, CURRENT_COLORWHEEL_ROTATION, FORCE, GENERATIONS, IS_TOUCH, LAST_TOUCHES, LINES, MAX_PARTICLES, MOUSEDOWN, PARTICLES, POOL, Particle, canvas, generationTimeout, init, log, setActiveColor, setupColorClick;
 
   COLORS = {
     red: {
@@ -47,11 +47,15 @@
 
   FORCE = -.15;
 
-  MAX_PARTICLES = 1400;
+  MAX_PARTICLES = 4000;
 
   PARTICLES = [];
 
   POOL = [];
+
+  GENERATIONS = [];
+
+  LINES = [];
 
   MOUSEDOWN = false;
 
@@ -129,37 +133,47 @@
     init: function(x, y, radius) {
       this.created = +(new Date);
       this.alive = true;
-      this.radius = radius || 10;
+      this.radius = radius || 6;
       this.rgb = [255, 255, 255];
       this.alpha = 1;
       this.x = x || 0.0;
       this.y = y || 0.0;
       this.vx = 0.0;
-      return this.vy = 0.0;
+      this.vy = 0.0;
+      this.exploded = false;
+      this.explosiondx = 0;
+      return this.explosiondy = 0;
     },
     move: function() {
-      var i, timeSinceCreated, _results;
+      var i, timeSinceCreated;
       timeSinceCreated = +(new Date) - this.created;
-      if (timeSinceCreated <= .5 * 1000) {
-        this.radius *= 0.97;
+      if (GENERATIONS[this.generation].length < 2) {
+        this.radius *= 0.999999;
         this.y -= .0001;
         i = 0;
-        _results = [];
         while (i < 3) {
           if (Math.abs(this.targetRgb[i] - this.rgb[i]) > 3) {
             this.rgb[i] += (this.targetRgb[i] - this.rgb[i]) * .1;
             this.rgb[i] = Math.floor(this.rgb[i]);
           }
-          _results.push(i++);
+          i++;
         }
-        return _results;
-      } else if (timeSinceCreated > 1.5 * 1000) {
-        if (timeSinceCreated > 2 * 1000) {
-          this.radius *= 1.016;
-          this.y += this.vy;
-          this.vy *= 0.95;
+      }
+      if (GENERATIONS[this.generation][1] && (GENERATIONS[this.generation][1] - LINES[this.line] < timeSinceCreated)) {
+        if (!this.exploded) {
+          this.radius = 1.125 * Math.random();
+          this.explosiondx = (Math.random() - .5) * 1.2;
+          this.explosiondy = (Math.random() - .5) * 1.2;
         }
-        this.alpha *= 0.95;
+        this.x += this.explosiondx;
+        this.y += this.explosiondy;
+        this.explosiondx *= .97;
+        this.explosiondy *= .97;
+        this.exploded = true;
+        this.radius *= 1.001;
+        this.y += this.vy;
+        this.vy *= 0.95;
+        this.alpha *= 0.98;
         return this.alive = this.alpha > .01;
       }
     },
@@ -177,7 +191,7 @@
 
   canvas.setup = function() {};
 
-  canvas.spawn = function(x, y) {
+  canvas.spawn = function(x, y, line, generation) {
     var particle;
     if (PARTICLES.length >= MAX_PARTICLES) {
       POOL.push(PARTICLES.shift());
@@ -185,6 +199,8 @@
     particle = (POOL.length ? POOL.pop() : new Particle());
     particle.init(x, y, 8);
     particle.targetRgb = COLORS[CURRENT_COLOR].rgb;
+    particle.line = line;
+    particle.generation = generation;
     FORCE += (Math.random() - .5) * .04;
     if (FORCE > .4) {
       FORCE = .4;
@@ -223,14 +239,24 @@
     return _results;
   };
 
+  generationTimeout = void 0;
+
   canvas.touchstart = function() {
     var i, touch, _i, _len, _ref, _results;
     MOUSEDOWN = true;
+    clearTimeout(generationTimeout);
+    LINES.push(+(new Date));
+    if (!GENERATIONS.length || GENERATIONS[GENERATIONS.length - 1].length === 2) {
+      console.log('drawing start');
+      GENERATIONS.push([+(new Date)]);
+    } else {
+      GENERATIONS;
+    }
     _ref = canvas.touches;
     _results = [];
     for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
       touch = _ref[i];
-      canvas.spawn(touch.x, touch.y);
+      canvas.spawn(touch.x, touch.y, LINES.length - 1, GENERATIONS.length - 1);
       if (LAST_TOUCHES.length < i + 1) {
         _results.push(LAST_TOUCHES.push({
           x: touch.x,
@@ -244,12 +270,16 @@
   };
 
   canvas.touchend = function() {
+    clearTimeout(generationTimeout);
+    generationTimeout = setTimeout(function() {
+      return GENERATIONS[GENERATIONS.length - 1].push(+(new Date));
+    }, 3 * 1000);
     MOUSEDOWN = false;
     return LAST_TOUCHES = [];
   };
 
   canvas.touchmove = function() {
-    var density, h, i, j, lastTouchX, lastTouchY, n, touch, _ref, _results;
+    var density, h, i, j, l, lastTouchX, lastTouchY, n, touch, _ref, _results;
     if (!(MOUSEDOWN || IS_TOUCH)) {
       return;
     }
@@ -272,12 +302,22 @@
         lastTouchX = LAST_TOUCHES[i].x;
         lastTouchY = LAST_TOUCHES[i].y;
       } else {
-        canvas.spawn(touch.x, touch.y);
+        l = 0;
+        n = Math.random() * 10;
+        while (l < n) {
+          canvas.spawn(touch.x, touch.y, LINES.length - 1, GENERATIONS.length - 1);
+          l++;
+        }
       }
-      density = (Math.sqrt(Math.pow(touch.x - lastTouchX, 2) + Math.pow(touch.y - lastTouchY, 2)) + 1) / 3;
+      density = (Math.sqrt(Math.pow(touch.x - lastTouchX, 2) + Math.pow(touch.y - lastTouchY, 2)) + 1) / 2;
       j = 0;
       while (j < density) {
-        canvas.spawn(touch.x - ((touch.x - lastTouchX) * (j / density)), touch.y - ((touch.y - lastTouchY) * (j / density)));
+        l = 0;
+        n = Math.random() * 10;
+        while (l < n) {
+          canvas.spawn(touch.x - ((touch.x - lastTouchX) * (j / density)), touch.y - ((touch.y - lastTouchY) * (j / density)), LINES.length - 1, GENERATIONS.length - 1);
+          l++;
+        }
         j++;
       }
       LAST_TOUCHES[i] = {

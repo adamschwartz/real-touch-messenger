@@ -40,9 +40,11 @@ CURRENT_COLOR = undefined
 CURRENT_COLORWHEEL_ROTATION = undefined
 FORCE = -.15
 
-MAX_PARTICLES = 1400
+MAX_PARTICLES = 4000
 PARTICLES = []
 POOL = []
+GENERATIONS = []
+LINES = []
 
 MOUSEDOWN = false
 LAST_TOUCHES = []
@@ -109,18 +111,22 @@ Particle:: =
   init: (x, y, radius) ->
     @created = +new Date
     @alive = true
-    @radius = radius or 10
+    @radius = radius or 6
     @rgb = [255, 255, 255]
     @alpha = 1
     @x = x or 0.0
     @y = y or 0.0
     @vx = 0.0
     @vy = 0.0
+    @exploded = false
+    @explosiondx = 0
+    @explosiondy = 0
 
   move: ->
     timeSinceCreated = +new Date - @created
-    if timeSinceCreated <= .5 * 1000
-      @radius *= 0.97
+
+    if GENERATIONS[@generation].length < 2
+      @radius *= 0.999999
       @y -= .0001
       i = 0
 
@@ -130,13 +136,74 @@ Particle:: =
           @rgb[i] = Math.floor(@rgb[i])
         i++
 
-    else if timeSinceCreated > 1.5 * 1000
-      if timeSinceCreated > 2 * 1000
-        @radius *= 1.016
-        @y += @vy
-        @vy *= 0.95
-      @alpha *= 0.95
+    if GENERATIONS[@generation][1] and (GENERATIONS[@generation][1] - LINES[@line] < timeSinceCreated)
+      if not @exploded
+        @radius = 1.125 * Math.random()
+        @explosiondx = (Math.random() - .5) * 1.2
+        @explosiondy = (Math.random() - .5) * 1.2
+
+      @x += @explosiondx
+      @y += @explosiondy
+
+      @explosiondx *= .97
+      @explosiondy *= .97
+
+      @exploded = true
+
+      # @exploded = true
+      # @radius = 1 * Math.pow(Math.random(), 2)
+
+      # @y += (Math.random() - .5) * 1.2
+      # @x += (Math.random() - .5) * 1.2
+
+      # @radius *= 1.016
+      @radius *= 1.001
+      @y += @vy
+      @vy *= 0.95
+
+      @alpha *= 0.98
       @alive = @alpha > .01
+
+    # if timeSinceCreated < .5 * 1000
+    #   @radius *= .00001
+    #   @y *=
+
+    # if timeSinceCreated > .5 * 1000 and not @exploded
+    #   @exploded = true
+    #   @radius = 1
+
+    # if timeSinceCreated <= .5 * 1000
+    #   @radius *= 0.97
+    #   @y -= .0001
+    #   i = 0
+
+    #   while i < 3
+    #     if Math.abs(@targetRgb[i] - @rgb[i]) > 3
+    #       @rgb[i] += (@targetRgb[i] - @rgb[i]) * .1
+    #       @rgb[i] = Math.floor(@rgb[i])
+    #     i++
+
+    #else if timeSinceCreated > 2.5 * 1000
+
+
+    # if timeSinceCreated <= .5 * 1000
+    #   @radius *= 0.97
+    #   @y -= .0001
+    #   i = 0
+
+    #   while i < 3
+    #     if Math.abs(@targetRgb[i] - @rgb[i]) > 3
+    #       @rgb[i] += (@targetRgb[i] - @rgb[i]) * .1
+    #       @rgb[i] = Math.floor(@rgb[i])
+    #     i++
+
+    # else if timeSinceCreated > 1.5 * 1000
+    #   if timeSinceCreated > 2 * 1000
+    #     @radius *= 1.016
+    #     @y += @vy
+    #     @vy *= 0.95
+    #   @alpha *= 0.95
+    #   @alive = @alpha > .01
 
   draw: (ctx) ->
     ctx.beginPath()
@@ -147,11 +214,13 @@ Particle:: =
 canvas = Sketch.create(container: document.querySelector('.drawing-surface'))
 canvas.setup = ->
 
-canvas.spawn = (x, y) ->
+canvas.spawn = (x, y, line, generation) ->
   POOL.push PARTICLES.shift() if PARTICLES.length >= MAX_PARTICLES
   particle = (if POOL.length then POOL.pop() else new Particle())
   particle.init x, y, 8
   particle.targetRgb = COLORS[CURRENT_COLOR].rgb
+  particle.line = line
+  particle.generation = generation
   FORCE += (Math.random() - .5) * .04
   FORCE = .4 if FORCE > .4
   FORCE = -.4 if FORCE < -.4
@@ -176,11 +245,23 @@ canvas.draw = ->
     PARTICLES[i].draw canvas
     i--
 
+generationTimeout = undefined
+
 canvas.touchstart = ->
   MOUSEDOWN = true
 
+  clearTimeout generationTimeout
+
+  LINES.push (+ new Date)
+
+  if not GENERATIONS.length or GENERATIONS[GENERATIONS.length - 1].length is 2
+    console.log 'drawing start'
+    GENERATIONS.push [(+ new Date)]
+  else
+    GENERATIONS
+
   for touch, i in canvas.touches
-    canvas.spawn touch.x, touch.y
+    canvas.spawn touch.x, touch.y, LINES.length - 1, GENERATIONS.length - 1
 
     if LAST_TOUCHES.length < i + 1
       LAST_TOUCHES.push
@@ -188,6 +269,12 @@ canvas.touchstart = ->
         y: touch.y
 
 canvas.touchend = ->
+  clearTimeout generationTimeout
+
+  generationTimeout = setTimeout ->
+    GENERATIONS[GENERATIONS.length - 1].push (+ new Date)
+  , 3 * 1000
+
   MOUSEDOWN = false
   LAST_TOUCHES = []
 
@@ -213,13 +300,21 @@ canvas.touchmove = ->
       lastTouchX = LAST_TOUCHES[i].x
       lastTouchY = LAST_TOUCHES[i].y
     else
-      canvas.spawn touch.x, touch.y
+      l = 0
+      n = Math.random() * 10
+      while l < n
+        canvas.spawn touch.x, touch.y, LINES.length - 1, GENERATIONS.length - 1
+        l++
 
-    density = (Math.sqrt(Math.pow(touch.x - lastTouchX, 2) + Math.pow(touch.y - lastTouchY, 2)) + 1) / 3
+    density = (Math.sqrt(Math.pow(touch.x - lastTouchX, 2) + Math.pow(touch.y - lastTouchY, 2)) + 1) / 2
 
     j = 0
     while j < density
-      canvas.spawn touch.x - ((touch.x - lastTouchX) * (j / density)), touch.y - ((touch.y - lastTouchY) * (j / density))
+      l = 0
+      n = Math.random() * 10
+      while l < n
+        canvas.spawn touch.x - ((touch.x - lastTouchX) * (j / density)), touch.y - ((touch.y - lastTouchY) * (j / density)), LINES.length - 1, GENERATIONS.length - 1
+        l++
       j++
 
     LAST_TOUCHES[i] =
