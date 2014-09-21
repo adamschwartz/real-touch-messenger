@@ -46,6 +46,8 @@ POOL = []
 GENERATIONS = []
 LINES = []
 
+INITIAL_RADIUS = 2
+
 MOUSEDOWN = false
 LAST_TOUCHES = []
 
@@ -111,7 +113,7 @@ Particle:: =
   init: (x, y, radius) ->
     @created = +new Date
     @alive = true
-    @radius = radius or 6
+    @radius = radius or INITIAL_RADIUS
     @rgb = [255, 255, 255]
     @alpha = 1
     @x = x or 0.0
@@ -121,6 +123,7 @@ Particle:: =
     @exploded = false
     @explosiondx = 0
     @explosiondy = 0
+    @radiusdx = null
 
   move: ->
     timeSinceCreated = +new Date - @created
@@ -130,6 +133,14 @@ Particle:: =
       @y -= .0001
       i = 0
 
+      @y += @vy * .125
+      @vy *= 0.95
+
+      if not @radiusdx
+        @radiusdx = ((Math.random() - .5) * .01)
+
+      @radius += @radiusdx
+
       while i < 3
         if Math.abs(@targetRgb[i] - @rgb[i]) > 3
           @rgb[i] += (@targetRgb[i] - @rgb[i]) * .1
@@ -138,9 +149,11 @@ Particle:: =
 
     if GENERATIONS[@generation][1] and (GENERATIONS[@generation][1] - LINES[@line] < timeSinceCreated)
       if not @exploded
-        @radius = 1.125 * Math.random()
-        @explosiondx = (Math.random() - .5) * 1.2
-        @explosiondy = (Math.random() - .5) * 1.2
+        @radius = 2 * Math.random() * Math.random()
+        @y += (Math.random() - .5) * 2
+        @x += (Math.random() - .5) * 1.5
+        @explosiondx = (Math.random() - .5) * 2.2
+        @explosiondy = (Math.random() - .5) * 2.2
 
       @x += @explosiondx
       @y += @explosiondy
@@ -150,60 +163,13 @@ Particle:: =
 
       @exploded = true
 
-      # @exploded = true
-      # @radius = 1 * Math.pow(Math.random(), 2)
+      @y += (Math.random() - .5) * 1.2
+      @x += (Math.random() - .5) * 1.2
 
-      # @y += (Math.random() - .5) * 1.2
-      # @x += (Math.random() - .5) * 1.2
-
-      # @radius *= 1.016
       @radius *= 1.001
-      @y += @vy
-      @vy *= 0.95
 
-      @alpha *= 0.98
-      @alive = @alpha > .01
-
-    # if timeSinceCreated < .5 * 1000
-    #   @radius *= .00001
-    #   @y *=
-
-    # if timeSinceCreated > .5 * 1000 and not @exploded
-    #   @exploded = true
-    #   @radius = 1
-
-    # if timeSinceCreated <= .5 * 1000
-    #   @radius *= 0.97
-    #   @y -= .0001
-    #   i = 0
-
-    #   while i < 3
-    #     if Math.abs(@targetRgb[i] - @rgb[i]) > 3
-    #       @rgb[i] += (@targetRgb[i] - @rgb[i]) * .1
-    #       @rgb[i] = Math.floor(@rgb[i])
-    #     i++
-
-    #else if timeSinceCreated > 2.5 * 1000
-
-
-    # if timeSinceCreated <= .5 * 1000
-    #   @radius *= 0.97
-    #   @y -= .0001
-    #   i = 0
-
-    #   while i < 3
-    #     if Math.abs(@targetRgb[i] - @rgb[i]) > 3
-    #       @rgb[i] += (@targetRgb[i] - @rgb[i]) * .1
-    #       @rgb[i] = Math.floor(@rgb[i])
-    #     i++
-
-    # else if timeSinceCreated > 1.5 * 1000
-    #   if timeSinceCreated > 2 * 1000
-    #     @radius *= 1.016
-    #     @y += @vy
-    #     @vy *= 0.95
-    #   @alpha *= 0.95
-    #   @alive = @alpha > .01
+      @alpha *= 0.95
+      @alive = @alpha > .05
 
   draw: (ctx) ->
     ctx.beginPath()
@@ -217,7 +183,7 @@ canvas.setup = ->
 canvas.spawn = (x, y, line, generation) ->
   POOL.push PARTICLES.shift() if PARTICLES.length >= MAX_PARTICLES
   particle = (if POOL.length then POOL.pop() else new Particle())
-  particle.init x, y, 8
+  particle.init x, y, INITIAL_RADIUS
   particle.targetRgb = COLORS[CURRENT_COLOR].rgb
   particle.line = line
   particle.generation = generation
@@ -261,7 +227,11 @@ canvas.touchstart = ->
     GENERATIONS
 
   for touch, i in canvas.touches
-    canvas.spawn touch.x, touch.y, LINES.length - 1, GENERATIONS.length - 1
+    l = 0
+    n = Math.random() * 10
+    while l < n
+      canvas.spawn touch.x, touch.y, LINES.length - 1, GENERATIONS.length - 1
+      l++
 
     if LAST_TOUCHES.length < i + 1
       LAST_TOUCHES.push
@@ -273,7 +243,7 @@ canvas.touchend = ->
 
   generationTimeout = setTimeout ->
     GENERATIONS[GENERATIONS.length - 1].push (+ new Date)
-  , 3 * 1000
+  , 2 * 1000
 
   MOUSEDOWN = false
   LAST_TOUCHES = []
