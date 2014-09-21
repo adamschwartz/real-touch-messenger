@@ -126,22 +126,22 @@ html, body {
 
 .colors [data-color]:nth-child(2),
 .colors [data-color]:nth-child(3) {
-  top: 17%
+  top: 17.4%
 }
 
 .colors [data-color]:nth-child(5),
 .colors [data-color]:nth-child(6) {
-  bottom: 18%
+  bottom: 17.4%
 }
 
 .colors [data-color]:nth-child(2),
 .colors [data-color]:nth-child(5) {
-  left: 5%
+  left: 5.425%
 }
 
 .colors [data-color]:nth-child(3),
 .colors [data-color]:nth-child(6) {
-  right: 5%
+  right: 5.425%
 }
 
 [data-color="red"]    { background: rgb(189,   0,   3) }
