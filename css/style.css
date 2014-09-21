@@ -31,10 +31,13 @@ html, body {
   bottom: 0;
   left: 0;
   pointer-events: none;
-  -webkit-transition: -webkit-transform .4s;
-  -moz-transition: -moz-transform .4s;
   -webkit-transform-origin: 50% 50%;
   -moz-transform-origin: 50% 50%;
+}
+
+body.loaded .colors {
+  -webkit-transition: -webkit-transform .4s;
+  -moz-transition: -moz-transform .4s;
 }
 
 .colors-square-outer {
@@ -64,6 +67,9 @@ html, body {
   height: 32%;
   border-radius: 50%;
   cursor: pointer;
+}
+
+body.loaded .colors [data-color] {
   -webkit-transition: opacity .4s;
   -moz-transition: opacity .4s;
 }
@@ -85,10 +91,13 @@ html, body {
   margin: auto;
   background: #000;
   border-radius: 50%;
-  -webkit-transition: -webkit-transform .4s;
-  -moz-transition: -moz-transform .4s;
   -webkit-transform: translate3d(0, 0, 0) scale(0);
   -moz-transform: translate3d(0, 0, 0) scale(0);
+}
+
+body.loaded .colors [data-color]:after {
+  -webkit-transition: -webkit-transform .4s;
+  -moz-transition: -moz-transform .4s;
 }
 
 .colors [data-color].current:after {
@@ -151,19 +160,3 @@ html, body {
 [data-color="green"]  { background: rgb(15,  221,   7) }
 [data-color="yellow"] { background: rgb(207, 187,   8) }
 [data-color="blue"]   { background: rgb(105, 210, 231) }
-
-.loading-cover {
-  position: fixed;
-  background: #000;
-  opacity: 1;
-  transition: opacity .4s;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-}
-
-.loading-cover.loaded {
-  opacity: 0;
-  pointer-events: none;
-}

@@ -68,8 +68,8 @@
   init = function() {
     setActiveColor('red');
     setupColorClick();
-    return setTimeout(function() {
-      return document.querySelector('.loading-cover').classList.add('loaded');
+    return document.addEventListener('DOMContentLoaded', function() {
+      return document.body.classList.add('loaded');
     });
   };
 

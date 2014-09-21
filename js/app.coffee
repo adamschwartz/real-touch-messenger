@@ -57,8 +57,8 @@ init = ->
   setActiveColor 'red'
   setupColorClick()
 
-  setTimeout ->
-    document.querySelector('.loading-cover').classList.add 'loaded'
+  document.addEventListener 'DOMContentLoaded', ->
+    document.body.classList.add 'loaded'
 
 setActiveColor = (color) ->
   CURRENT_COLOR = color
