@@ -8,6 +8,22 @@ html, body {
   overflow: hidden;
 }
 
+.drawing-surface {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.console {
+  position: fixed;
+  top: 0;
+  left: 0;
+  color: #fff;
+  white-space: pre;
+}
+
 .colors {
   position: fixed;
   top: 0;
@@ -46,7 +62,6 @@ html, body {
   pointer-events: all;
   width: 32%;
   height: 32%;
-  border: 2px solid #000;
   border-radius: 50%;
   cursor: pointer;
   -webkit-transition: opacity .4s;
@@ -79,6 +94,16 @@ html, body {
 .colors [data-color].current:after {
   -webkit-transform: translate3d(0, 0, 0) scale(1);
   -moz-transform: translate3d(0, 0, 0) scale(1);
+}
+
+.colors.collapsed [data-color].current:before {
+  content: "";
+  display: block;
+  position: absolute;
+  width: 300%;
+  height: 300%;
+  top: -100%;
+  left: -100%;
 }
 
 .colors [data-color]:nth-child(1),
@@ -126,3 +151,19 @@ html, body {
 [data-color="green"]  { background: rgb(15,  221,   7) }
 [data-color="yellow"] { background: rgb(207, 187,   8) }
 [data-color="blue"]   { background: rgb(105, 210, 231) }
+
+.loading-cover {
+  position: fixed;
+  background: #000;
+  opacity: 1;
+  transition: opacity .4s;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.loading-cover.loaded {
+  opacity: 0;
+  pointer-events: none;
+}

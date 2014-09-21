@@ -4,11 +4,13 @@
         <title>Real Touch Messager</title>
 
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+        <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width, minimal-ui"/>
 
         <link href="css/style.css" rel="stylesheet">
     </head>
     <body>
+        <div class="drawing-surface"></div>
+
         <div class="colors collapsed">
             <div class="colors-square-outer">
                 <div class="colors-square-inner">
@@ -23,7 +25,9 @@
             </div>
         </div>
 
-        <div class="drawing-surface"></div>
+        <div class="console"></div>
+
+        <div class="loading-cover"></div>
 
         <script src="js/sketch.js"></script>
         <script src="js/app.js"></script>

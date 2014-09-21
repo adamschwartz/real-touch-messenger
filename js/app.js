@@ -1,5 +1,5 @@
 (function() {
-  var $allColors, $colors, COLORS, CURRENT_COLOR, CURRENT_COLORWHEEL_ROTATION, FORCE, IS_TOUCH, LAST_TOUCH_X, LAST_TOUCH_Y, MAX_PARTICLES, MOUSEDOWN, PARTICLES, POOL, Particle, canvas, init, setActiveColor, setupColorClick;
+  var $allColors, $colors, COLORS, CURRENT_COLOR, CURRENT_COLORWHEEL_ROTATION, FORCE, IS_TOUCH, LAST_TOUCHES, MAX_PARTICLES, MOUSEDOWN, PARTICLES, POOL, Particle, canvas, init, log, setActiveColor, setupColorClick;
 
   COLORS = {
     red: {
@@ -55,17 +55,22 @@
 
   MOUSEDOWN = false;
 
-  LAST_TOUCH_X = void 0;
-
-  LAST_TOUCH_Y = void 0;
+  LAST_TOUCHES = [];
 
   $colors = document.querySelector('.colors');
 
   $allColors = document.querySelectorAll('.colors [data-color]');
 
+  log = function(message) {
+    return document.querySelector('.console').insertAdjacentHTML('afterbegin', "" + message + "\n");
+  };
+
   init = function() {
     setActiveColor('red');
-    return setupColorClick();
+    setupColorClick();
+    return setTimeout(function() {
+      return document.querySelector('.loading-cover').classList.add('loaded');
+    });
   };
 
   setActiveColor = function(color) {
@@ -101,7 +106,10 @@
 
   setupColorClick = function() {
     return Array.prototype.forEach.call($allColors, function($color) {
-      return $color.addEventListener('click', function() {
+      var eventType;
+      eventType = IS_TOUCH ? 'touchstart' : 'click';
+      return $color.addEventListener(eventType, function(event) {
+        event.preventDefault();
         MOUSEDOWN = false;
         if ($colors.classList.contains('collapsed')) {
           $colors.classList.remove('collapsed');
@@ -215,40 +223,70 @@
     return _results;
   };
 
-  canvas.mousedown = function() {
-    return MOUSEDOWN = true;
+  canvas.touchstart = function() {
+    var i, touch, _i, _len, _ref, _results;
+    MOUSEDOWN = true;
+    _ref = canvas.touches;
+    _results = [];
+    for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+      touch = _ref[i];
+      canvas.spawn(touch.x, touch.y);
+      if (LAST_TOUCHES.length < i + 1) {
+        _results.push(LAST_TOUCHES.push({
+          x: touch.x,
+          y: touch.y
+        }));
+      } else {
+        _results.push(void 0);
+      }
+    }
+    return _results;
   };
 
-  canvas.mouseup = function() {
+  canvas.touchend = function() {
     MOUSEDOWN = false;
-    LAST_TOUCH_X = null;
-    return LAST_TOUCH_Y = null;
+    return LAST_TOUCHES = [];
   };
 
-  canvas.mousemove = function() {
-    var density, i, j, n, touch;
+  canvas.touchmove = function() {
+    var density, h, i, j, lastTouchX, lastTouchY, n, touch, _ref, _results;
     if (!(MOUSEDOWN || IS_TOUCH)) {
       return;
     }
     i = 0;
     n = canvas.touches.length;
+    if (LAST_TOUCHES.length < n - 1) {
+      h = 0;
+      while (h < n) {
+        LAST_TOUCHES.push({
+          x: canvas.touches[i].x,
+          y: canvas.touches[i].y
+        });
+        h++;
+      }
+    }
+    _results = [];
     while (i < n) {
       touch = canvas.touches[i];
-      if (LAST_TOUCH_X == null) {
-        LAST_TOUCH_X = touch.x;
-        LAST_TOUCH_Y = touch.y;
-        return;
+      if (((_ref = LAST_TOUCHES[i]) != null ? _ref.x : void 0) != null) {
+        lastTouchX = LAST_TOUCHES[i].x;
+        lastTouchY = LAST_TOUCHES[i].y;
+      } else {
+        canvas.spawn(touch.x, touch.y);
       }
-      density = (Math.sqrt(Math.pow(touch.x - LAST_TOUCH_X, 2) + Math.pow(touch.y - LAST_TOUCH_Y, 2)) + 1) / 3;
+      density = (Math.sqrt(Math.pow(touch.x - lastTouchX, 2) + Math.pow(touch.y - lastTouchY, 2)) + 1) / 3;
       j = 0;
       while (j < density) {
-        canvas.spawn(touch.x - ((touch.x - LAST_TOUCH_X) * (j / density)), touch.y - ((touch.y - LAST_TOUCH_Y) * (j / density)));
+        canvas.spawn(touch.x - ((touch.x - lastTouchX) * (j / density)), touch.y - ((touch.y - lastTouchY) * (j / density)));
         j++;
       }
-      LAST_TOUCH_X = touch.x;
-      LAST_TOUCH_Y = touch.y;
-      i++;
+      LAST_TOUCHES[i] = {
+        x: touch.x,
+        y: touch.y
+      };
+      _results.push(i++);
     }
+    return _results;
   };
 
   init();

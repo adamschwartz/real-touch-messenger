@@ -45,15 +45,20 @@ PARTICLES = []
 POOL = []
 
 MOUSEDOWN = false
-LAST_TOUCH_X = undefined
-LAST_TOUCH_Y = undefined
+LAST_TOUCHES = []
 
-$colors = document.querySelector('.colors')
-$allColors = document.querySelectorAll('.colors [data-color]')
+$colors = document.querySelector '.colors'
+$allColors = document.querySelectorAll '.colors [data-color]'
+
+log = (message) ->
+  document.querySelector('.console').insertAdjacentHTML 'afterbegin', "#{ message }\n"
 
 init = ->
   setActiveColor 'red'
   setupColorClick()
+
+  setTimeout ->
+    document.querySelector('.loading-cover').classList.add 'loaded'
 
 setActiveColor = (color) ->
   CURRENT_COLOR = color
@@ -87,7 +92,9 @@ setActiveColor = (color) ->
 
 setupColorClick = ->
   Array::forEach.call $allColors, ($color) ->
-    $color.addEventListener 'click', ->
+    eventType = if IS_TOUCH then 'touchstart' else 'click'
+    $color.addEventListener eventType, (event) ->
+      event.preventDefault()
       MOUSEDOWN = false
       if $colors.classList.contains 'collapsed'
         $colors.classList.remove 'collapsed'
@@ -169,33 +176,56 @@ canvas.draw = ->
     PARTICLES[i].draw canvas
     i--
 
-canvas.mousedown = ->
+canvas.touchstart = ->
   MOUSEDOWN = true
 
-canvas.mouseup = ->
-  MOUSEDOWN = false
-  LAST_TOUCH_X = null
-  LAST_TOUCH_Y = null
+  for touch, i in canvas.touches
+    canvas.spawn touch.x, touch.y
 
-canvas.mousemove = ->
+    if LAST_TOUCHES.length < i + 1
+      LAST_TOUCHES.push
+        x: touch.x
+        y: touch.y
+
+canvas.touchend = ->
+  MOUSEDOWN = false
+  LAST_TOUCHES = []
+
+canvas.touchmove = ->
   return unless MOUSEDOWN or IS_TOUCH
 
   i = 0
   n = canvas.touches.length
 
+  if LAST_TOUCHES.length < n - 1
+    h = 0
+    while h < n
+      LAST_TOUCHES.push
+        x: canvas.touches[i].x
+        y: canvas.touches[i].y
+
+      h++
+
   while i < n
     touch = canvas.touches[i]
-    unless LAST_TOUCH_X?
-      LAST_TOUCH_X = touch.x
-      LAST_TOUCH_Y = touch.y
-      return
-    density = (Math.sqrt(Math.pow(touch.x - LAST_TOUCH_X, 2) + Math.pow(touch.y - LAST_TOUCH_Y, 2)) + 1) / 3
+
+    if LAST_TOUCHES[i]?.x?
+      lastTouchX = LAST_TOUCHES[i].x
+      lastTouchY = LAST_TOUCHES[i].y
+    else
+      canvas.spawn touch.x, touch.y
+
+    density = (Math.sqrt(Math.pow(touch.x - lastTouchX, 2) + Math.pow(touch.y - lastTouchY, 2)) + 1) / 3
+
     j = 0
     while j < density
-      canvas.spawn touch.x - ((touch.x - LAST_TOUCH_X) * (j / density)), touch.y - ((touch.y - LAST_TOUCH_Y) * (j / density))
+      canvas.spawn touch.x - ((touch.x - lastTouchX) * (j / density)), touch.y - ((touch.y - lastTouchY) * (j / density))
       j++
-    LAST_TOUCH_X = touch.x
-    LAST_TOUCH_Y = touch.y
+
+    LAST_TOUCHES[i] =
+      x: touch.x
+      y: touch.y
+
     i++
 
 init()
