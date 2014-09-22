@@ -268,7 +268,7 @@
     for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
       touch = _ref[i];
       l = 0;
-      n = Math.random() * 10;
+      n = Math.random() * 2;
       while (l < n) {
         canvas.spawn(touch.x, touch.y, LINES.length - 1, GENERATIONS.length - 1);
         l++;
@@ -319,7 +319,7 @@
         lastTouchY = LAST_TOUCHES[i].y;
       } else {
         l = 0;
-        n = Math.random() * 10;
+        n = Math.random() * 2;
         while (l < n) {
           canvas.spawn(touch.x, touch.y, LINES.length - 1, GENERATIONS.length - 1);
           l++;
@@ -329,7 +329,7 @@
       j = 0;
       while (j < density) {
         l = 0;
-        n = Math.random() * 10;
+        n = Math.random() * 2;
         while (l < n) {
           canvas.spawn(touch.x - ((touch.x - lastTouchX) * (j / density)), touch.y - ((touch.y - lastTouchY) * (j / density)), LINES.length - 1, GENERATIONS.length - 1);
           l++;

@@ -228,7 +228,7 @@ canvas.touchstart = ->
 
   for touch, i in canvas.touches
     l = 0
-    n = Math.random() * 10
+    n = Math.random() * 2
     while l < n
       canvas.spawn touch.x, touch.y, LINES.length - 1, GENERATIONS.length - 1
       l++
@@ -271,7 +271,7 @@ canvas.touchmove = ->
       lastTouchY = LAST_TOUCHES[i].y
     else
       l = 0
-      n = Math.random() * 10
+      n = Math.random() * 2
       while l < n
         canvas.spawn touch.x, touch.y, LINES.length - 1, GENERATIONS.length - 1
         l++
@@ -281,7 +281,7 @@ canvas.touchmove = ->
     j = 0
     while j < density
       l = 0
-      n = Math.random() * 10
+      n = Math.random() * 2
       while l < n
         canvas.spawn touch.x - ((touch.x - lastTouchX) * (j / density)), touch.y - ((touch.y - lastTouchY) * (j / density)), LINES.length - 1, GENERATIONS.length - 1
         l++
