@@ -276,7 +276,7 @@ canvas.touchmove = ->
         canvas.spawn touch.x, touch.y, LINES.length - 1, GENERATIONS.length - 1
         l++
 
-    density = (Math.sqrt(Math.pow(touch.x - lastTouchX, 2) + Math.pow(touch.y - lastTouchY, 2)) + 1) / 2
+    density = (Math.sqrt(Math.pow(touch.x - lastTouchX, 2) + Math.pow(touch.y - lastTouchY, 2)) + 1) / 3
 
     j = 0
     while j < density

@@ -325,7 +325,7 @@
           l++;
         }
       }
-      density = (Math.sqrt(Math.pow(touch.x - lastTouchX, 2) + Math.pow(touch.y - lastTouchY, 2)) + 1) / 2;
+      density = (Math.sqrt(Math.pow(touch.x - lastTouchX, 2) + Math.pow(touch.y - lastTouchY, 2)) + 1) / 3;
       j = 0;
       while (j < density) {
         l = 0;
