@@ -1,5 +1,5 @@
 (function() {
-  var $allColors, $colors, COLORS, CURRENT_COLOR, CURRENT_COLORWHEEL_ROTATION, FORCE, GENERATIONS, INITIAL_RADIUS, IS_TOUCH, LAST_TOUCHES, LINES, MAX_PARTICLES, MOUSEDOWN, PARTICLES, POOL, Particle, canvas, generationTimeout, init, log, setActiveColor, setupColorClick;
+  var $allColors, $colors, COLORS, CURRENT_COLOR, CURRENT_COLORWHEEL_ROTATION, FORCE, GENERATIONS, GENERATIONS_DRIFT, INITIAL_RADIUS, IS_TOUCH, LAST_TOUCHES, LINES, MAX_PARTICLES, MOUSEDOWN, PARTICLES, POOL, Particle, canvas, generationTimeout, init, log, setActiveColor, setupColorClick;
 
   COLORS = {
     red: {
@@ -54,6 +54,8 @@
   POOL = [];
 
   GENERATIONS = [];
+
+  GENERATIONS_DRIFT = [];
 
   LINES = [];
 
@@ -135,7 +137,8 @@
     init: function(x, y, radius) {
       this.created = +(new Date);
       this.alive = true;
-      this.radius = radius || INITIAL_RADIUS;
+      this.targetradius = radius || INITIAL_RADIUS;
+      this.radius = this.targetradius * 5;
       this.rgb = [255, 255, 255];
       this.alpha = 1;
       this.x = x || 0.0;
@@ -145,21 +148,20 @@
       this.exploded = false;
       this.explosiondx = 0;
       this.explosiondy = 0;
-      return this.radiusdx = null;
+      this.radiusdx = null;
+      this.driftx = (Math.random() - .5) * .2;
+      return this.drifty = (Math.random() - .5) * .2;
     },
     move: function() {
       var i, timeSinceCreated;
       timeSinceCreated = +(new Date) - this.created;
+      this.x += GENERATIONS_DRIFT[this.generation][0];
+      this.y += GENERATIONS_DRIFT[this.generation][1];
       if (GENERATIONS[this.generation].length < 2) {
-        this.radius *= 0.999999;
-        this.y -= .0001;
-        i = 0;
-        this.y += this.vy * .125;
-        this.vy *= 0.95;
-        if (!this.radiusdx) {
-          this.radiusdx = (Math.random() - .5) * .01;
+        if (Math.abs(this.targetradius - this.radius) > 0) {
+          this.radius += (this.targetradius - this.radius) / 4;
         }
-        this.radius += this.radiusdx;
+        i = 0;
         while (i < 3) {
           if (Math.abs(this.targetRgb[i] - this.rgb[i]) > 3) {
             this.rgb[i] += (this.targetRgb[i] - this.rgb[i]) * .1;
@@ -258,10 +260,8 @@
     clearTimeout(generationTimeout);
     LINES.push(+(new Date));
     if (!GENERATIONS.length || GENERATIONS[GENERATIONS.length - 1].length === 2) {
-      console.log('drawing start');
       GENERATIONS.push([+(new Date)]);
-    } else {
-      GENERATIONS;
+      GENERATIONS_DRIFT.push([(Math.random() - .5) * .1, (Math.random() - .5) * .1]);
     }
     _ref = canvas.touches;
     _results = [];

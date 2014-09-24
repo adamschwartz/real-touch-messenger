@@ -44,6 +44,7 @@ MAX_PARTICLES = 4000
 PARTICLES = []
 POOL = []
 GENERATIONS = []
+GENERATIONS_DRIFT = []
 LINES = []
 
 INITIAL_RADIUS = 2
@@ -113,7 +114,8 @@ Particle:: =
   init: (x, y, radius) ->
     @created = +new Date
     @alive = true
-    @radius = radius or INITIAL_RADIUS
+    @targetradius = radius or INITIAL_RADIUS
+    @radius = @targetradius * 5
     @rgb = [255, 255, 255]
     @alpha = 1
     @x = x or 0.0
@@ -124,29 +126,29 @@ Particle:: =
     @explosiondx = 0
     @explosiondy = 0
     @radiusdx = null
+    @driftx = (Math.random() - .5) * .2
+    @drifty = (Math.random() - .5) * .2
 
   move: ->
     timeSinceCreated = +new Date - @created
 
+    # Constant generation drift
+    @x += GENERATIONS_DRIFT[@generation][0]
+    @y += GENERATIONS_DRIFT[@generation][1]
+
+    # Animate immediately from white to color and large to target radius
     if GENERATIONS[@generation].length < 2
-      @radius *= 0.999999
-      @y -= .0001
+      if Math.abs(@targetradius - @radius) > 0
+        @radius += (@targetradius - @radius) / 4
+
       i = 0
-
-      @y += @vy * .125
-      @vy *= 0.95
-
-      if not @radiusdx
-        @radiusdx = ((Math.random() - .5) * .01)
-
-      @radius += @radiusdx
-
       while i < 3
         if Math.abs(@targetRgb[i] - @rgb[i]) > 3
           @rgb[i] += (@targetRgb[i] - @rgb[i]) * .1
           @rgb[i] = Math.floor(@rgb[i])
         i++
 
+    # Explode particles when the generation dies
     if GENERATIONS[@generation][1] and (GENERATIONS[@generation][1] - LINES[@line] < timeSinceCreated)
       if not @exploded
         @radius = 2 * Math.random() * Math.random()
@@ -221,10 +223,8 @@ canvas.touchstart = ->
   LINES.push (+ new Date)
 
   if not GENERATIONS.length or GENERATIONS[GENERATIONS.length - 1].length is 2
-    console.log 'drawing start'
     GENERATIONS.push [(+ new Date)]
-  else
-    GENERATIONS
+    GENERATIONS_DRIFT.push [(Math.random() - .5) * .1, (Math.random() - .5) * .1]
 
   for touch, i in canvas.touches
     l = 0
